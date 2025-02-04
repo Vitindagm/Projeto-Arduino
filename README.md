@@ -23,52 +23,74 @@ VCC → 5V no Arduino
 
 GND → GND no Arduino
 
-DATA → Pino Digital 2 (ou outro pino digital à sua escolha no Arduino)
+DATA → Pino Digital 2 (ou outro pino digital à sua escolha no Arduino
 
+Codigo:
+#include <DHT.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
 
+#define DHTPIN 2     // Pino digital sensor DHT
+#define DHTTYPE DHT11 // DHT 11
 
-Código:
-
-#include "DHT.h"
-
-// Defina o tipo de sensor
-#define DHTTYPE DHT11  // Se estiver usando o DHT22, troque por DHT22
-
-// Defina o pino do sensor
-#define DHTPIN 2
-
-// Inicialize o sensor DHT
 DHT dht(DHTPIN, DHTTYPE);
+
+// Definir o endereço do LCD para 0x27 para um display de 16 caracteres e 2 linhas
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // Endereço do LCD, número de colunas e linhas
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Iniciando o sensor DHT");
-  
+  Serial.println(F("DHTxx teste!"));
+
   dht.begin();
+
+  // Inicializar o LCD com 16 colunas e 2 linhas
+  lcd.begin(16, 2);
 }
 
 void loop() {
-  // Aguarde 2 segundos entre as leituras
+  // Aguarde alguns segundos entre as medições.
   delay(2000);
 
-  // Leitura da umidade
+  // A leitura da temperatura ou umidade leva cerca de 250 milissegundos!
+  // O sensor pode ter um atraso de até 2 segundos para a leitura
   float h = dht.readHumidity();
-  // Leitura da temperatura em Celsius
   float t = dht.readTemperature();
 
-  // Verifique se há erros de leitura
+  // Verifique se alguma leitura falhou e tenta novamente.
   if (isnan(h) || isnan(t)) {
-    Serial.println("Erro ao ler o sensor DHT");
+    Serial.println(F("Falha de leitura do sensor DHT!"));
     return;
   }
 
-  // Exiba os valores no Serial Monitor
-  Serial.print("Umidade: ");
+  // Compute heat index in Celsius (isFahreheit = false)
+  float hic = dht.computeHeatIndex(t, h, false);
+
+  Serial.print(F("Umidade: "));
   Serial.print(h);
-  Serial.print(" %\t");
-  Serial.print("Temperatura: ");
+  Serial.print(F("%  Temperatura: "));
   Serial.print(t);
-  Serial.println(" °C");
+  Serial.print(F("°C "));
+
+  lcd.setBacklight(HIGH);
+
+  lcd.setCursor(0, 0);
+  lcd.print(F("Humidade: "));
+  lcd.setCursor(10, 0);
+  lcd.print(round(h));
+  lcd.setCursor(12, 0);
+  lcd.print(F(" %"));
+  delay(3000);
+
+  lcd.setCursor(0, 1);
+  lcd.print(F("Tempo: "));
+  lcd.setCursor(7, 1);
+  lcd.print(round(t));
+  lcd.setCursor(9, 1);
+  lcd.write(32);  // Caracter espaço
+  lcd.write(223); // Caracter °
+  lcd.print(F("C"));
+  delay(3000);
 }
 
 Passos:
@@ -85,6 +107,8 @@ Pesquise por "DHT" e instale a biblioteca "DHT sensor library for ESPx" por Adaf
 
 
 3. Copie e cole o código acima no Arduino IDE, selecione a placa correta e a porta, e carregue o código.
+
+4. Não esqueça de instalar bibliotecas necessarias caso precise.
 
 
 
